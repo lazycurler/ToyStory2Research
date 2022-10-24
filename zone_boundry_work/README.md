@@ -11,17 +11,17 @@ The function known as `updateBuzzZone()` is not for the faint of heart. Upon fir
 
 # Zones and Boundaries
 In order to address some of the more complicated parts of `updateBuzzZone()` the concept of zone boundaries must be introduced. Boundaries (also known as Area Portals?) mark the area where one zone transitions into another. Essentially, invisible walls that if crossed result in Buzz being in a new zone. Any level that has more than one zone will have at least one boundary, likely two*. Given this write-up's focus on the boss warp on Al's Space Land, ASL will be used as an example. The below image shows the approximate location of each of the seven zones in ASL with white lines marking the boundaries between the zones.
-![spaceLand](https://i.imgur.com/iMT2aCx.png)
+![spaceLand](./ASL_zoned_map.png)
 *Note: while the image only depicts 8 zone boundaries, there are in actuality 16. It is suspected each zone has its own zone boundary that provides directionality and hysteresis when Buzz is near/transiting from one zone to another.
 
 Internally, the boundaries associated with each zone are stored in an array/lookup table referred to as: `adjacentZoneLUT`. The `adjacentZoneLUT` is composed of multiple entries each with a Zone ID (denoting which zone this boundary borders) and an index/offset that can be used to retrieve more information about a given boundary. The offset can be used to index into a secondary lookup table referred to as: `boundaryLUT`. The `boundaryLUT` contains the pointer needed to access the `0x20 Bytes` used to describe a boundary referred to as a: `BoundaryInfo_t` object. Not every field of the `BoundaryInfo_t` object is known, but the ones relevant to `updateBuzzZone()` have been identified. It appears each `BoundaryInfo_t` entry shares the same first two bytes, the following 8 entries appear to be `Vec3<int16_t>` in the order `Z, Y, X` (in theory another coordinate system/order could be chosen but that's outside the scope of this write-up). The final 6 bytes` purpose are unknown. The first (0th) vec corresponds to the bottom left hand corner of a quad, the second seems to be used as a scalar (more on that later). [3, 5, 7] are all unknown and [2, 4, 6] are the upper left, upper right, and bottom right of the quad respectively.
-![lookupTables](https://i.imgur.com/mqoz5hA.png)
+![lookupTables](./BoundaryInfographic.png)
 
 Graphing and connecting the coordinates of each of the boundaries for a given level provides a good visual representation of the boundaries.
-![boundaries](https://i.imgur.com/Z6Wu02S.gif)
+![boundaries](./boundaries.gif)
 
 Here the same graph is shown but with the scalar included. A correlation between the relative `X` position of the boundary and the magnitude of the scalar's `Y` can be observed.
-![withScalars](https://i.imgur.com/Oj8BneO.gif)
+![withScalars](./boundaries_with_scalars.gif)
 
 # `updateBuzzZone()`: At a Glance
 The heart of the function is a `do...while` that iterates through each boundary associated with Buzz's current zone. The `while` loop terminates when it has reached the end of this list (denoted by a `LUT Index/Offset` of `0xff`. The loop consists of a series of increasingly complex checks that verify if Buzz has crossed a boundary and has entered a new zone. The checks are as follows:
@@ -38,8 +38,8 @@ Having established what zones and boundaries are and roughly how `updateBuzzZone
 
 # Exploitation?
 This begs the question: What previous location(s) can cause Buzz to be moved to zone `5`? One could spend tens of hours reverse engineering the code in `updateBuzzZone()` and `isInBoundaryRange()` functions _or_ they could rewrite the underlying code in Python and explore the state-space with brute force. :sunglasses: To that end, below is a visual approximation of a subset of valid previous Buzz locations that will result in a boss warp on ASL. The resulting graph reveals a series of concentric spheres/shells of valid locations. Further below, a graph with `X` and `Z` fixed at `0` provides a 1D projection of the spheres.
-![spheres](https://i.imgur.com/LTsMoiA.png)
-![x0z0](https://i.imgur.com/B5uY3b6.png)
+![spheres](./ASL_valid_warp_locations.png)
+![0x0z](./ASL_valid_warp_locations_0x_0z.png)
 
 Given the magnitude of the distance from the origin required to trigger a boss warp (on the order of `6e6` or ~6,000,000 units minimum) the only (known) viable way to achieve this distance is by going OOB. Unfortunately, the time required to fall this distance is ~50 seconds, much too long to be viable in a speedrun. In theory, this type of behavior could be exploitable on other levels, but a cursory search didn't reveal anything. The level would have to have an event that resulted in Buzz being forcibly moved to a new location where the only (remaining) condition required at spawn is a change in zone. Additionally, the zone would have to be adjacent to the spawn zone.
 
