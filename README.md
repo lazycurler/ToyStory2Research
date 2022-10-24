@@ -1,4 +1,5 @@
-# Reverse engineering and documenting interesting parts of Toy Story 2
+# Toy Story 2 Research
+Reverse engineering and documenting interesting parts of Toy Story 2 (mainly for the PC?)
 
 **DISCLAIMER!**
 
